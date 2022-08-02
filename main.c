@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 11:54:20
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-03 01:00:41
+ * @LastEditTime: 2022-08-03 01:21:55
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\main.c
  * @Description:
  *
@@ -53,6 +53,7 @@ static void scheduler_read_temp(void *p_event_data, uint16_t event_size)
 
     // Update flash file with new NDEF message.
     max_30205_read();
+    bmi270_read();
 }
 
 static void temp_meas_timeout_handler(void *p_context)

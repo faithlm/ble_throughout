@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:35:52
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-03 00:30:25
+ * @LastEditTime: 2022-08-03 01:22:06
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\inc\bmi270.h
  * @Description:
  *
@@ -209,5 +209,5 @@ struct bmi270_data
 };
 
 bool bmi270_init(void);
-
+bool bmi270_read(void);
 #endif

@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-03 01:03:34
+ * @LastEditTime: 2022-08-03 01:24:03
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\bmi270.c
  * @Description:
  *
@@ -68,7 +68,7 @@ static int8_t write_config_file(void)
     return ret;
 }
 
-bool bmi270_init(void)
+static bool bmi270_setup_config(void)
 {
     ret_code_t ret_code;
 
@@ -172,7 +172,7 @@ bool bmi270_init(void)
         if (ret_code != 0)
         {
             NRF_LOG_INFO("bmi270 read init status fail");
-            return ret_code;
+            return false;
         }
 
         p_data[0] &= BMI270_INST_MESSAGE_MSK;
@@ -187,17 +187,96 @@ bool bmi270_init(void)
     NRF_LOG_INFO("bmi270 success");
     return true;
 }
-
-uint16_t bmi270_read(void)
+static bool bmi270_set_performance_mode(void)
 {
-    // ret_code_t ret_code;
+    ret_code_t ret_code;
 
-    // p_data_read[0] = TEMP_REGISTER;
-    // ret_code = iic_write(BMI270_ADDR, p_data_read, 1);
-    // if (NRF_SUCCESS != ret_code)
-    // {
-    //     NRF_LOG_INFO("iic_write err = %d", ret_code);
-    //     return false;
-    // }
+    uint8_t p_data[2];
+    p_data[0] = BMI270_REG_PWR_CTRL;
+    p_data[1] = (BMI270_PWR_CTRL_AUX_EN | BMI270_PWR_CTRL_ACC_EN | BMI270_PWR_CTRL_TEMP_EN) & (BMI270_PWR_CTRL_MSK);
+    ret_code = iic_write(BMI270_ADDR, p_data, 2);
+    if (NRF_SUCCESS != ret_code)
+    {
+        NRF_LOG_INFO("bmi270 pwr ctrl fail");
+        return false;
+    }
+    NRF_LOG_INFO("bmi270 pwr ctrl success");
+
+    p_data[0] = BMI270_REG_ACC_CONF;
+    p_data[1] = 0xA8;
+    ret_code = iic_write(BMI270_ADDR, p_data, 2);
+    if (NRF_SUCCESS != ret_code)
+    {
+        NRF_LOG_INFO("bmi270 acc config fail");
+        return false;
+    }
+    NRF_LOG_INFO("bmi270 acc config success");
+
+    p_data[0] = BMI270_REG_GYR_CONF;
+    p_data[1] = 0xE9;
+    ret_code = iic_write(BMI270_ADDR, p_data, 2);
+    if (NRF_SUCCESS != ret_code)
+    {
+        NRF_LOG_INFO("bmi270 gyr config fail");
+        return false;
+    }
+    NRF_LOG_INFO("bmi270 gyr config success");
+
+    p_data[0] = BMI270_REG_PWR_CONF;
+    p_data[1] = 0x02;
+    ret_code = iic_write(BMI270_ADDR, p_data, 2);
+    if (NRF_SUCCESS != ret_code)
+    {
+        NRF_LOG_INFO("bmi270 pwr config fail");
+        return false;
+    }
+    NRF_LOG_INFO("bmi270 pwr config success");
+
+    p_data[0] = BMI270_REG_ACC_X_LSB;
+    ret_code = iic_write(BMI270_ADDR, p_data, 1);
+    if (NRF_SUCCESS != ret_code)
+    {
+        NRF_LOG_INFO("bmi270 set read pointer fail");
+        return false;
+    }
+    NRF_LOG_INFO("bmi270 set read pointer success");
+    return true;
+}
+bool bmi270_init(void)
+{
+    if (!bmi270_setup_config())
+    {
+        NRF_LOG_ERROR("bmi270_setup_config fail");
+        return false;
+    }
+
+    if (!bmi270_set_performance_mode())
+    {
+        NRF_LOG_ERROR("bmi270_setup_config fail");
+        return false;
+    }
+    return true;
+}
+static uint8_t p_data[12];
+bool bmi270_read(void)
+{
+    ret_code_t ret_code;
+
+    // check chip id
+    p_data[0] = BMI270_REG_ACC_X_LSB;
+    ret_code = iic_write(BMI270_ADDR, p_data, 1);
+    if (NRF_SUCCESS != ret_code)
+    {
+        NRF_LOG_INFO("bmi270 set read pointer fail");
+        return false;
+    }
+
+    ret_code = iic_read(BMI270_ADDR, p_data, 12);
+    if (NRF_SUCCESS != ret_code)
+    {
+        NRF_LOG_INFO("bmi270 read data fail");
+        return false;
+    }
+    NRF_LOG_HEXDUMP_INFO(p_data, 12);
     return 0;
 }
