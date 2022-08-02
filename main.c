@@ -2,11 +2,11 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 11:54:20
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-02 00:44:29
+ * @LastEditTime: 2022-08-03 01:00:41
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\main.c
- * @Description: 
- * 
- * Copyright (c) 2022 by DESKTOP-JDCNG1F\Administrator liangmeng0011@163.com, All Rights Reserved. 
+ * @Description:
+ *
+ * Copyright (c) 2022 by DESKTOP-JDCNG1F\Administrator liangmeng0011@163.com, All Rights Reserved.
  */
 
 #include "nrf_pwr_mgmt.h"
@@ -14,13 +14,14 @@
 #include "user_log.h"
 #include "customer_ble.h"
 #include "max30205.h"
+#include "bmi270.h"
 #include "app_scheduler.h"
 
-#define APP_SCHED_MAX_EVENT_SIZE    (0)                  /**< Maximum size of scheduler events. */
-#define APP_SCHED_QUEUE_SIZE        (20)                  /**< Maximum number of events in the scheduler queue. */
+#define APP_SCHED_MAX_EVENT_SIZE (0) /**< Maximum size of scheduler events. */
+#define APP_SCHED_QUEUE_SIZE (20)    /**< Maximum number of events in the scheduler queue. */
 
-#define TEMP_MEAS_INTERVAL          APP_TIMER_TICKS(1000)                   
-APP_TIMER_DEF(m_temp_timer_id);                                  
+#define TEMP_MEAS_INTERVAL APP_TIMER_TICKS(1000)
+APP_TIMER_DEF(m_temp_timer_id);
 /**@brief Function for initializing power management.
  */
 static void power_management_init(void)
@@ -30,8 +31,6 @@ static void power_management_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-
-                
 /**@brief Function for handling the idle state (main loop).
  *
  * @details If there is no pending log operation, then sleep until next the next event occurs.
@@ -47,7 +46,7 @@ static void idle_state_handle(void)
 /**
  * @brief Function for updating NDEF message in the flash file.
  */
-static void scheduler_read_temp(void * p_event_data, uint16_t event_size)
+static void scheduler_read_temp(void *p_event_data, uint16_t event_size)
 {
     UNUSED_PARAMETER(p_event_data);
     UNUSED_PARAMETER(event_size);
@@ -56,10 +55,10 @@ static void scheduler_read_temp(void * p_event_data, uint16_t event_size)
     max_30205_read();
 }
 
-static void temp_meas_timeout_handler(void * p_context)
+static void temp_meas_timeout_handler(void *p_context)
 {
     UNUSED_PARAMETER(p_context);
-    
+
     ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_read_temp);
     APP_ERROR_CHECK(err_code);
 }
@@ -83,14 +82,20 @@ void timers_init(void)
  */
 int main(void)
 {
-  
+
     log_init();
     timers_init();
     /* Initialize App Scheduler. */
     APP_SCHED_INIT(APP_SCHED_MAX_EVENT_SIZE, APP_SCHED_QUEUE_SIZE);
-		power_management_init();
+    power_management_init();
     ble_init();
-    if(!max_30205_init())
+
+    if (!bmi270_init())
+    {
+        NRF_LOG_ERROR("bmi270 init fail");
+    }
+
+    if (!max_30205_init())
     {
         NRF_LOG_ERROR("max_30205_init fail");
     }
