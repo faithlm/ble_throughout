@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-03 01:24:03
+ * @LastEditTime: 2022-08-05 22:52:00
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\bmi270.c
  * @Description:
  *
@@ -82,6 +82,13 @@ static bool bmi270_setup_config(void)
     }
 
     // check chip id
+    p_data[0] = BMI270_REG_CHIP_ID;
+    ret_code = iic_write(BMI270_ADDR, p_data, 1);
+    if (NRF_SUCCESS != ret_code)
+    {
+        NRF_LOG_INFO("bmi270 write read point fail");
+        return false;
+    }
     ret_code = iic_read(BMI270_ADDR, p_data, 1);
     if (NRF_SUCCESS != ret_code)
     {
@@ -93,7 +100,7 @@ static bool bmi270_setup_config(void)
         NRF_LOG_ERROR("Unexpected chip id (%x). Expected (%x)", p_data[0], BMI270_CHIP_ID);
         return false;
     }
-    NRF_LOG_INFO("bmi270 chip id read success");
+    NRF_LOG_INFO("bmi270 chip id =%d", p_data[0]);
 
     p_data[0] = BMI270_REG_CMD;
     p_data[1] = BMI270_CMD_SOFT_RESET;
@@ -193,7 +200,8 @@ static bool bmi270_set_performance_mode(void)
 
     uint8_t p_data[2];
     p_data[0] = BMI270_REG_PWR_CTRL;
-    p_data[1] = (BMI270_PWR_CTRL_AUX_EN | BMI270_PWR_CTRL_ACC_EN | BMI270_PWR_CTRL_TEMP_EN) & (BMI270_PWR_CTRL_MSK);
+    // p_data[1] = (BMI270_PWR_CTRL_AUX_EN | BMI270_PWR_CTRL_ACC_EN | BMI270_PWR_CTRL_TEMP_EN) & (BMI270_PWR_CTRL_MSK);
+    p_data[1] = 0x0E;
     ret_code = iic_write(BMI270_ADDR, p_data, 2);
     if (NRF_SUCCESS != ret_code)
     {
@@ -232,14 +240,14 @@ static bool bmi270_set_performance_mode(void)
     }
     NRF_LOG_INFO("bmi270 pwr config success");
 
-    p_data[0] = BMI270_REG_ACC_X_LSB;
-    ret_code = iic_write(BMI270_ADDR, p_data, 1);
-    if (NRF_SUCCESS != ret_code)
-    {
-        NRF_LOG_INFO("bmi270 set read pointer fail");
-        return false;
-    }
-    NRF_LOG_INFO("bmi270 set read pointer success");
+    // p_data[0] = BMI270_REG_ACC_X_LSB;
+    // ret_code = iic_write(BMI270_ADDR, p_data, 1);
+    // if (NRF_SUCCESS != ret_code)
+    // {
+    //     NRF_LOG_INFO("bmi270 set read pointer fail");
+    //     return false;
+    // }
+    // NRF_LOG_INFO("bmi270 set read pointer success");
     return true;
 }
 bool bmi270_init(void)
