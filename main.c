@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 11:54:20
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-05 22:53:59
+ * @LastEditTime: 2022-08-08 01:55:24
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\main.c
  * @Description:
  *
@@ -20,7 +20,7 @@
 #define APP_SCHED_MAX_EVENT_SIZE (0) /**< Maximum size of scheduler events. */
 #define APP_SCHED_QUEUE_SIZE (20)    /**< Maximum number of events in the scheduler queue. */
 
-#define TEMP_MEAS_INTERVAL APP_TIMER_TICKS(1000)
+#define TEMP_MEAS_INTERVAL APP_TIMER_TICKS(100)
 APP_TIMER_DEF(m_temp_timer_id);
 /**@brief Function for initializing power management.
  */
@@ -51,17 +51,35 @@ static void scheduler_read_temp(void *p_event_data, uint16_t event_size)
     UNUSED_PARAMETER(p_event_data);
     UNUSED_PARAMETER(event_size);
 
-    // Update flash file with new NDEF message.
-    // max_30205_read();
-    //    bmi270_read();
+    max_30205_read();
+}
+
+/**
+ * @brief Function for updating NDEF message in the flash file.
+ */
+static void scheduler_read_imu(void *p_event_data, uint16_t event_size)
+{
+    UNUSED_PARAMETER(p_event_data);
+    UNUSED_PARAMETER(event_size);
+
+    bmi270_read();
 }
 
 static void temp_meas_timeout_handler(void *p_context)
 {
     UNUSED_PARAMETER(p_context);
-
-    ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_read_temp);
+		ret_code_t err_code;
+		static int32_t m_100ms_cnt = 0;
+		m_100ms_cnt++;
+    err_code = app_sched_event_put(NULL, 0, scheduler_read_imu);
     APP_ERROR_CHECK(err_code);
+		
+	if(0 == m_100ms_cnt%10)
+	{
+		m_100ms_cnt = 0;
+		err_code = app_sched_event_put(NULL, 0, scheduler_read_temp);
+    APP_ERROR_CHECK(err_code);
+	}
 }
 
 void timers_init(void)
@@ -92,15 +110,15 @@ int main(void)
     ble_init();
     ads_1299_init();
     ads_1299_start();
-    //    if (!bmi270_init())
-    //    {
-    //        NRF_LOG_ERROR("bmi270 init fail");
-    //    }
+    if (!bmi270_init())
+    {
+        NRF_LOG_ERROR("bmi270 init fail");
+    }
 
-    //    if (!max_30205_init())
-    //    {
-    //        NRF_LOG_ERROR("max_30205_init fail");
-    //    }
+    if (!max_30205_init())
+    {
+        NRF_LOG_ERROR("max_30205_init fail");
+    }
     // Enter main loop.
     for (;;)
     {

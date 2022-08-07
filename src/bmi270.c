@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-05 22:52:00
+ * @LastEditTime: 2022-08-08 02:24:59
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\bmi270.c
  * @Description:
  *
@@ -12,12 +12,16 @@
 #include "iic_peripheral.h"
 #include "nrf_delay.h"
 #include "bmi270_config_file.h"
+#include "app_fifo.h"
 
 #define BMI270_ADDR (0x68)
 #define BMI270_WR_LEN (256)
 #define BMI270_CONFIG_FILE_RETRIES (15)
 #define BMI270_CONFIG_FILE_POLL_PERIOD_US (10000)
 #define BMI270_INTER_WRITE_DELAY_US (1000)
+
+#define IMU_DATA_BUFF_SIZE 8192
+static app_fifo_t m_imu_data_fifo;
 
 static int8_t write_config_file(void)
 {
@@ -250,8 +254,17 @@ static bool bmi270_set_performance_mode(void)
     // NRF_LOG_INFO("bmi270 set read pointer success");
     return true;
 }
+static void imu_data_fifo_init(void)
+{
+    ret_code_t err_code;
+    static uint8_t imu_data_buff[IMU_DATA_BUFF_SIZE]; // Buffer for NFC TX FIFO instance
+
+    err_code = app_fifo_init(&m_imu_data_fifo, imu_data_buff, IMU_DATA_BUFF_SIZE);
+    APP_ERROR_CHECK(err_code);
+}
 bool bmi270_init(void)
 {
+    imu_data_fifo_init();
     if (!bmi270_setup_config())
     {
         NRF_LOG_ERROR("bmi270_setup_config fail");
@@ -285,6 +298,6 @@ bool bmi270_read(void)
         NRF_LOG_INFO("bmi270 read data fail");
         return false;
     }
-    NRF_LOG_HEXDUMP_INFO(p_data, 12);
+    //    NRF_LOG_HEXDUMP_INFO(p_data, 12);
     return 0;
 }

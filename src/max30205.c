@@ -10,16 +10,32 @@
  */
 #include "max30205.h"
 #include "iic_peripheral.h"
+#include "app_fifo.h"
 
 #define MAX30250_ADDR (0x90 >> 1)
 #define TEMP_REGISTER (0x00)
 #define CONFIG_REGISTER (0x01)
 #define CONFIG_VALUE (0x40)
 
+#define TEMP_DATA_BUFF_SIZE 1024
+static app_fifo_t m_temp_data_fifo;
+
 static uint8_t p_data_read[2] = {TEMP_REGISTER, 0x00};
+
+static void temp_data_fifo_init(void)
+{
+    ret_code_t err_code;
+    static uint8_t temp_data_buff[TEMP_DATA_BUFF_SIZE]; // Buffer for NFC TX FIFO instance
+
+    err_code = app_fifo_init(&m_temp_data_fifo, temp_data_buff, TEMP_DATA_BUFF_SIZE);
+    APP_ERROR_CHECK(err_code);
+}
+
 bool max_30205_init(void)
 {
     ret_code_t ret_code;
+
+    temp_data_fifo_init();
     uint8_t p_data[2] = {CONFIG_REGISTER, CONFIG_VALUE};
     if (iic_master_init())
     {
@@ -56,6 +72,6 @@ uint16_t max_30205_read(void)
         NRF_LOG_ERROR("iic_read err = %d", ret_code);
         return false;
     }
-    NRF_LOG_INFO("temp hex data = %d", ((p_data_read[0] << 8) + p_data_read[1]));
+    //    NRF_LOG_INFO("temp hex data = %d", ((p_data_read[0] << 8) + p_data_read[1]));
     return 0;
 }
