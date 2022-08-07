@@ -199,6 +199,7 @@
 #define BMI270_SET_BITS_POS_0(reg_data, bitname, data) \
     ((reg_data & ~(bitname##_MSK)) | (data & bitname##_MSK))
 
+#define IMU_DATA_LENGTH_IN_BYTE (12)
 struct bmi270_data
 {
     const struct device *i2c;
@@ -208,6 +209,8 @@ struct bmi270_data
     uint16_t gyr_range;
 };
 
+bool get_imu_fifo_data(uint8_t *p_data, uint32_t length);
+bool imu_fifo_flush(void);
 bool bmi270_init(void);
 bool bmi270_read(void);
 #endif

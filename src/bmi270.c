@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 04:00:27
+ * @LastEditTime: 2022-08-08 06:52:01
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\bmi270.c
  * @Description:
  *
@@ -255,6 +255,17 @@ static bool bmi270_set_performance_mode(void)
     // NRF_LOG_INFO("bmi270 set read pointer success");
     return true;
 }
+bool get_imu_fifo_data(uint8_t *p_data, uint32_t length)
+{
+    uint32_t read_length = length;
+    uint32_t ret_code = app_fifo_read(&m_imu_data_fifo, p_data, &read_length);
+    if (read_length == IMU_DATA_LENGTH_IN_BYTE)
+        return true;
+}
+bool imu_fifo_flush(void)
+{
+    app_fifo_flush(&m_imu_data_fifo);
+}
 static void imu_data_fifo_init(void)
 {
     ret_code_t err_code;
@@ -283,7 +294,7 @@ static uint8_t p_data[12];
 bool bmi270_read(void)
 {
     ret_code_t ret_code;
-
+    uint32_t write_length = IMU_DATA_LENGTH_IN_BYTE;
     // check chip id
     p_data[0] = BMI270_REG_ACC_X_LSB;
     ret_code = iic_write(BMI270_ADDR, p_data, 1);
@@ -301,11 +312,7 @@ bool bmi270_read(void)
     }
     if (trans_status)
     {
-        app_fifo_write(&m_imu_data_fifo, p_data, 12);
-    }
-    else
-    {
-        app_fifo_flush(&m_imu_data_fifo);
+        app_fifo_write(&m_imu_data_fifo, p_data, &write_length);
     }
     //    NRF_LOG_HEXDUMP_INFO(p_data, 12);
     return 0;

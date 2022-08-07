@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 04:00:55
+ * @LastEditTime: 2022-08-08 06:54:20
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\max30205.c
  * @Description:
  *
@@ -21,6 +21,19 @@
 static app_fifo_t m_temp_data_fifo;
 
 static uint8_t p_data_read[2] = {TEMP_REGISTER, 0x00};
+
+bool get_temp_fifo_data(uint8_t *p_data, uint32_t length)
+{
+    uint32_t read_length = length;
+    uint32_t ret_code = app_fifo_read(&m_temp_data_fifo, p_data, &read_length);
+    if (read_length == TEMP_DATA_LENGTH_IN_BYTE)
+        return true;
+    return false;
+}
+bool temp_fifo_flush(void)
+{
+    app_fifo_flush(&m_temp_data_fifo);
+}
 
 static void temp_data_fifo_init(void)
 {
@@ -57,7 +70,7 @@ bool max_30205_init(void)
 uint16_t max_30205_read(void)
 {
     ret_code_t ret_code;
-
+    uint32_t write_length = TEMP_DATA_LENGTH_IN_BYTE;
     p_data_read[0] = TEMP_REGISTER;
     ret_code = iic_write(MAX30250_ADDR, p_data_read, 1);
     if (NRF_SUCCESS != ret_code)
@@ -74,12 +87,9 @@ uint16_t max_30205_read(void)
     }
     if (trans_status)
     {
-        app_fifo_write(&m_temp_data_fifo, p_data_read, 2);
+        app_fifo_write(&m_temp_data_fifo, p_data_read, &write_length);
     }
-    else
-    {
-        app_fifo_flush(&m_temp_data_fifo);
-    }
+
     //    NRF_LOG_INFO("temp hex data = %d", ((p_data_read[0] << 8) + p_data_read[1]));
     return 0;
 }

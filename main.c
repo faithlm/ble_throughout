@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 11:54:20
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 03:56:08
+ * @LastEditTime: 2022-08-08 07:24:11
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\main.c
  * @Description:
  *
@@ -72,6 +72,7 @@ static void temp_meas_timeout_handler(void *p_context)
     ret_code_t err_code;
     static int32_t m_100ms_cnt = 0;
     m_100ms_cnt++;
+    NRF_LOG_INFO("Cnt = %d", get_cnt());
     err_code = app_sched_event_put(NULL, 0, scheduler_read_imu);
     APP_ERROR_CHECK(err_code);
 
@@ -109,8 +110,7 @@ int main(void)
     APP_SCHED_INIT(APP_SCHED_MAX_EVENT_SIZE, APP_SCHED_QUEUE_SIZE);
     power_management_init();
     ble_init();
-    ads_1299_init();
-    ads_1299_start();
+
     if (!bmi270_init())
     {
         NRF_LOG_ERROR("bmi270 init fail");
@@ -120,6 +120,8 @@ int main(void)
     {
         NRF_LOG_ERROR("max_30205_init fail");
     }
+    ads_1299_init();
+    ads_1299_start();
     // Enter main loop.
     for (;;)
     {

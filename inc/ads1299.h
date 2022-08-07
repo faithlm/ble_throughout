@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:35:52
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 03:46:56
+ * @LastEditTime: 2022-08-08 07:23:25
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\inc\ads1299.h
  * @Description:
  *
@@ -49,6 +49,7 @@
 #define WCT1 0x18
 #define WCT2 0x19
 
+#define ADC_DATA_LENGTH_IN_BYTE (24)
 typedef enum
 {
     ADC_FREQ_500HZ,
@@ -56,7 +57,10 @@ typedef enum
     ADC_FREQ_2000HZ,
 } adc_freq_enum_e;
 
+bool get_adc_fifo_data(uint8_t *p_data, uint32_t length);
+bool adc_fifo_flush(void);
 int ads_1299_init(void);
 void ads_1299_start(void);
-int set_adc_samp_freq(adc_freq_enum_e adc_freq);
+int ads_config_freq(adc_freq_enum_e adc_freq);
+int get_cnt(void);
 #endif

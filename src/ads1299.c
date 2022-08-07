@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 04:05:27
+ * @LastEditTime: 2022-08-08 07:28:18
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\ads1299.c
  * @Description:
  *
@@ -49,7 +49,6 @@ void spim_event_handler(nrfx_spim_evt_t const *p_event,
                         void *p_context)
 {
     spi_xfer_done = true;
-    NRF_LOG_INFO(" Received = %d", p_event->xfer_desc.rx_length);
 }
 
 static int ads_reg_xfer(uint8_t command, uint8_t value)
@@ -92,7 +91,7 @@ static void spi_init(void)
 {
 
     nrfx_spim_config_t spi_config = NRFX_SPIM_DEFAULT_CONFIG;
-    spi_config.frequency = NRF_SPIM_FREQ_8M;
+    spi_config.frequency = NRF_SPIM_FREQ_16M;
     spi_config.ss_pin = NRFX_SPIM_SS_PIN;
     spi_config.miso_pin = NRFX_SPIM_DOUT_PIN;
     spi_config.mosi_pin = NRFX_SPIM_DIN_PIN;
@@ -102,10 +101,22 @@ static void spi_init(void)
     spi_config.ss_active_high = true;
     APP_ERROR_CHECK(nrfx_spim_init(&spi, &spi_config, spim_event_handler, NULL));
 }
-
+bool get_adc_fifo_data(uint8_t *p_data, uint32_t length)
+{
+    uint32_t read_length = length;
+    uint32_t ret_code = app_fifo_read(&m_adc_data_fifo, p_data, &read_length);
+    if (read_length == ADC_DATA_LENGTH_IN_BYTE)
+        return true;
+    return false;
+}
+bool adc_fifo_flush(void)
+{
+    app_fifo_flush(&m_adc_data_fifo);
+    return true;
+}
 static void scheduler_adc_read_temp(void *p_event_data, uint16_t event_size)
 {
-    uint32_t lenght = 27;
+    uint32_t lenght = ADC_DATA_LENGTH_IN_BYTE;
     spi_xfer_done = false;
     memset(m_rx_buf, 0, 30);
     nrfx_spim_xfer_desc_t xfer_desc = NRFX_SPIM_XFER_RX(m_rx_buf, 27);
@@ -116,21 +127,22 @@ static void scheduler_adc_read_temp(void *p_event_data, uint16_t event_size)
     spi_xfer_done = false;
     if (trans_status)
     {
-        app_fifo_write(&m_adc_data_fifo, m_rx_buf, &lenght);
-        ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_adc_read_temp);
+        app_fifo_write(&m_adc_data_fifo, &m_rx_buf[3], &lenght);
+        ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_data_send);
         APP_ERROR_CHECK(err_code);
     }
-    else
-    {
-        app_fifo_flush(&m_adc_data_fifo);
-    }
 }
-
+static uint32_t cnt = 0;
+int get_cnt(void)
+{
+    return cnt;
+}
 static void rdy_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
     //    NRF_LOG_INFO("Test");
-    //    ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_adc_read_temp);
-    //    APP_ERROR_CHECK(err_code);
+    cnt++;
+    // ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_adc_read_temp);
+    // APP_ERROR_CHECK(err_code);
 }
 static void gpio_init(void)
 {
@@ -203,14 +215,14 @@ int ads_1299_init(void)
     nrf_delay_ms(10);
     ads_reg_xfer(WREG | CONFIG3, 0xC0);
     nrf_delay_ms(10);
-    ads_reg_xfer(WREG | CONFIG1, 0xC6);
+    ads_reg_xfer(WREG | CONFIG1, 0xC5);
     nrf_delay_ms(10);
     ads_xfer(RDATAC);
     nrf_delay_ms(10);
     return 0;
 }
 
-int ads_config_freq()
+int ads_config_freq(adc_freq_enum_e adc_freq)
 {
     return 0;
 }

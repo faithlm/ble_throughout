@@ -2,12 +2,15 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:30:10
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 03:53:54
+ * @LastEditTime: 2022-08-08 07:13:11
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\customer_ble.c
  * @Description:
  *
  * Copyright (c) 2022 by DESKTOP-JDCNG1F\Administrator liangmeng0011@163.com, All Rights Reserved.
  */
+#include "ads1299.h"
+#include "max30205.h"
+#include "bmi270.h"
 #include "customer_ble.h"
 #include <stdint.h>
 #include <string.h>
@@ -25,7 +28,7 @@
 #include "app_timer.h"
 #include "ble_nus.h"
 #include "app_util_platform.h"
-
+#include "app_scheduler.h"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
@@ -62,7 +65,12 @@ BLE_ADVERTISING_DEF(m_advertising);               /**< Advertising module instan
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;               /**< Handle of the current connection. */
 static uint16_t m_ble_nus_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - 3; /**< Maximum length of data (in bytes) that can be transmitted to the peer by the Nordic UART service module. */
 static ble_uuid_t m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}};
-
+static uint32_t data_send_index = 0;
+static uint8_t adc_freq = 0;
+static uint8_t data_send[64] = {
+    0xAA,
+    0x55,
+    0x00};
 bool trans_status = false;
 /**@brief Function for the GAP initialization.
  *
@@ -105,7 +113,7 @@ static void nrf_qwr_error_handler(uint32_t nrf_error)
     APP_ERROR_HANDLER(nrf_error);
 }
 
-static void nrf_data_send(uint8_t *p_data, uint16_t length)
+void nrf_data_send(uint8_t *p_data, uint16_t length)
 {
     uint32_t err_code;
     do
@@ -120,19 +128,34 @@ static void nrf_data_send(uint8_t *p_data, uint16_t length)
     } while (err_code == NRF_ERROR_RESOURCES);
 }
 
+void scheduler_data_send(void *p_event_data, uint16_t event_size)
+{
+    data_send[2] = (data_send_index >> 24) & (0xFF);
+    data_send[3] = (data_send_index >> 16) & (0xFF);
+    data_send[4] = (data_send_index >> 8) & (0xFF);
+    data_send[5] = (data_send_index) & (0xFF);
+    data_send[6] = adc_freq;
+    get_temp_fifo_data(&data_send[7], TEMP_DATA_LENGTH_IN_BYTE);
+    get_imu_fifo_data(&data_send[9], IMU_DATA_LENGTH_IN_BYTE);
+    get_adc_fifo_data(&data_send[21], ADC_DATA_LENGTH_IN_BYTE);
+    nrf_data_send(data_send, 45);
+}
 static void scheduler_ble_command_process(void *p_event_data, uint16_t event_size)
 {
-    uint32_t err_code = 0;
+    uint8_t *cmd = (uint8_t *)p_event_data;
     uint8_t rsp_data[2] = {0};
     rsp_data[1] = 0;
-    switch (p_event_data[0])
+    switch (cmd[0])
     {
     case BLE_COMMAND_TRANS_CONTROL:
-        if (BLE_TRANS_START == p_event_data[1])
+        if (BLE_TRANS_START == cmd[1])
         {
+            adc_fifo_flush();
+            temp_fifo_flush();
+            imu_fifo_flush();
             trans_status = true;
         }
-        else if (BLE_TRANS_STOP == p_event_data[1])
+        else if (BLE_TRANS_STOP == cmd[1])
         {
             trans_status = false;
         }
@@ -146,7 +169,7 @@ static void scheduler_ble_command_process(void *p_event_data, uint16_t event_siz
         break;
     case BLE_COMMAND_ADC_SAMP_FREQ:
         rsp_data[0] = BLE_COMMAND_TRANS_CONTROL;
-        rsp_data[1] = set_adc_samp_freq(p_event_data[1]);
+        rsp_data[1] = ads_config_freq(cmd[1]);
 
         nrf_data_send(rsp_data, 2);
         break;
@@ -282,6 +305,7 @@ static void ble_evt_handler(ble_evt_t const *p_ble_evt, void *p_context)
 
     case BLE_GAP_EVT_DISCONNECTED:
         NRF_LOG_INFO("Disconnected");
+        trans_status = false;
         // LED indication will be changed when advertising starts.
         m_conn_handle = BLE_CONN_HANDLE_INVALID;
         break;
@@ -347,6 +371,13 @@ static void ble_stack_init(void)
     uint32_t ram_start = 0;
     err_code = nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);
     APP_ERROR_CHECK(err_code);
+
+    ble_cfg_t ble_cfg;
+    memset(&ble_cfg, 0, sizeof(ble_cfg));
+    ble_cfg.conn_cfg.conn_cfg_tag = APP_BLE_CONN_CFG_TAG;
+    ble_cfg.conn_cfg.params.gattc_conn_cfg.write_cmd_tx_queue_size = 4;
+    ble_cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 20;
+    err_code = sd_ble_cfg_set(BLE_CONN_CFG_GATTC, &ble_cfg, ram_start);
 
     // Enable BLE stack.
     err_code = nrf_sdh_ble_enable(&ram_start);
