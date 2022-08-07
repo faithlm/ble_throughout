@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-06 01:47:58
+ * @LastEditTime: 2022-08-08 00:03:25
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\ads1299.c
  * @Description:
  *
@@ -17,6 +17,7 @@
 #include "nrf_delay.h"
 #include "app_error.h"
 #include <string.h>
+#include "app_scheduler.h"
 
 #define NRFX_SPIM_SCK_PIN 3
 #define NRFX_SPIM_MOSI_PIN 4
@@ -26,15 +27,14 @@
 #define ADS_PWR_PIN NRF_GPIO_PIN_MAP(1, 1)
 #define ADS_RESET_PIN NRF_GPIO_PIN_MAP(1, 2)
 #define ADS_START_PIN NRF_GPIO_PIN_MAP(1, 3)
-#define ADS_RDY_PIN NRF_GPIO_PIN_MAP(1, 3)
+#define ADS_RDY_PIN NRF_GPIO_PIN_MAP(1, 4)
 
 #define SPI_INSTANCE 3                                           /**< SPI instance index. */
 static const nrfx_spim_t spi = NRFX_SPIM_INSTANCE(SPI_INSTANCE); /**< SPI instance. */
 static volatile bool spi_xfer_done;                              /**< Flag used to indicate that SPI instance completed the transfer. */
 
-static uint8_t m_tx_buf[32] = {0};  /**< TX buffer. */
-static uint8_t m_rx_buf[32] = {0};  /**< RX buffer. */
-static uint8_t m_length = 32; /**< Transfer length. */
+static uint8_t m_tx_buf[32] = {0}; /**< TX buffer. */
+static uint8_t m_rx_buf[32] = {0}; /**< RX buffer. */
 
 /**
  * @brief SPI user event handler.
@@ -88,18 +88,6 @@ static int ads_xfer(uint8_t value)
     return 0;
 }
 
-static int ads_read_sample(void)
-{
-    spi_xfer_done = false;
-    memset(m_rx_buf, 0, 30);
-    nrfx_spim_xfer_desc_t xfer_desc = NRFX_SPIM_XFER_TX(m_rx_buf, 27);
-    APP_ERROR_CHECK(nrfx_spim_xfer(&spi, &xfer_desc, 0));
-    while (!spi_xfer_done)
-    {
-    }
-    spi_xfer_done = false;
-    return 0;
-}
 static void spi_init(void)
 {
 
@@ -114,10 +102,24 @@ static void spi_init(void)
     spi_config.ss_active_high = false;
     APP_ERROR_CHECK(nrfx_spim_init(&spi, &spi_config, spim_event_handler, NULL));
 }
+
+static void scheduler_adc_read_temp(void *p_event_data, uint16_t event_size)
+{
+    spi_xfer_done = false;
+    memset(m_rx_buf, 0, 30);
+    nrfx_spim_xfer_desc_t xfer_desc = NRFX_SPIM_XFER_TX(m_rx_buf, 27);
+    APP_ERROR_CHECK(nrfx_spim_xfer(&spi, &xfer_desc, 0));
+    while (!spi_xfer_done)
+    {
+    }
+    spi_xfer_done = false;
+}
+
 static void rdy_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
     NRF_LOG_INFO("Test");
-    ads_read_sample();
+//    ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_adc_read_temp);
+//    APP_ERROR_CHECK(err_code);
 }
 static void gpio_init(void)
 {
@@ -131,7 +133,7 @@ static void gpio_init(void)
     err_code = nrf_drv_gpiote_in_init(ADS_RDY_PIN, &in_config, rdy_handler);
     APP_ERROR_CHECK(err_code);
 
-    // nrf_drv_gpiote_in_event_enable(ADS_RDY_PIN, true);
+    nrf_drv_gpiote_in_event_enable(ADS_RDY_PIN, true);
 
     nrf_gpio_cfg_output(ADS_PWR_PIN);
     nrf_gpio_pin_clear(ADS_PWR_PIN);
@@ -146,6 +148,8 @@ static void gpio_init(void)
 static void ads_power_on(void)
 {
     nrf_gpio_pin_set(ADS_PWR_PIN);
+    nrf_gpio_pin_set(ADS_RESET_PIN);
+    nrf_delay_ms(150);
 }
 
 static void ads_reset(void)
@@ -171,9 +175,9 @@ int ads_1299_init(void)
     spi_init();
     gpio_init();
     ads_power_on();
-    ads_clear_reset();
+//    ads_clear_reset();
     nrf_delay_ms(150);
-		ads_xfer(SDATAC);
+    ads_xfer(SDATAC);
     nrf_delay_ms(10);
     ads_reg_xfer(WREG | CONFIG3, 0xC0);
     nrf_delay_ms(10);
@@ -186,9 +190,5 @@ int ads_1299_init(void)
 
 int ads_config_freq()
 {
-}
-uint16_t ads_1299_read(void)
-{
-
     return 0;
 }
