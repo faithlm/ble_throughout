@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 11:54:20
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 01:55:24
+ * @LastEditTime: 2022-08-08 03:56:08
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\main.c
  * @Description:
  *
@@ -17,8 +17,9 @@
 #include "bmi270.h"
 #include "app_scheduler.h"
 #include "ads1299.h"
-#define APP_SCHED_MAX_EVENT_SIZE (0) /**< Maximum size of scheduler events. */
-#define APP_SCHED_QUEUE_SIZE (20)    /**< Maximum number of events in the scheduler queue. */
+#include "customer_ble.h"
+#define APP_SCHED_MAX_EVENT_SIZE (20) /**< Maximum size of scheduler events. */
+#define APP_SCHED_QUEUE_SIZE (50)     /**< Maximum number of events in the scheduler queue. */
 
 #define TEMP_MEAS_INTERVAL APP_TIMER_TICKS(100)
 APP_TIMER_DEF(m_temp_timer_id);
@@ -68,18 +69,18 @@ static void scheduler_read_imu(void *p_event_data, uint16_t event_size)
 static void temp_meas_timeout_handler(void *p_context)
 {
     UNUSED_PARAMETER(p_context);
-		ret_code_t err_code;
-		static int32_t m_100ms_cnt = 0;
-		m_100ms_cnt++;
+    ret_code_t err_code;
+    static int32_t m_100ms_cnt = 0;
+    m_100ms_cnt++;
     err_code = app_sched_event_put(NULL, 0, scheduler_read_imu);
     APP_ERROR_CHECK(err_code);
-		
-	if(0 == m_100ms_cnt%10)
-	{
-		m_100ms_cnt = 0;
-		err_code = app_sched_event_put(NULL, 0, scheduler_read_temp);
-    APP_ERROR_CHECK(err_code);
-	}
+
+    if (0 == m_100ms_cnt % 10)
+    {
+        m_100ms_cnt = 0;
+        err_code = app_sched_event_put(NULL, 0, scheduler_read_temp);
+        APP_ERROR_CHECK(err_code);
+    }
 }
 
 void timers_init(void)

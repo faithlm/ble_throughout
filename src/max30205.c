@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-03 01:24:07
+ * @LastEditTime: 2022-08-08 04:00:55
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\max30205.c
  * @Description:
  *
@@ -11,7 +11,7 @@
 #include "max30205.h"
 #include "iic_peripheral.h"
 #include "app_fifo.h"
-
+#include "customer_ble.h"
 #define MAX30250_ADDR (0x90 >> 1)
 #define TEMP_REGISTER (0x00)
 #define CONFIG_REGISTER (0x01)
@@ -71,6 +71,14 @@ uint16_t max_30205_read(void)
     {
         NRF_LOG_ERROR("iic_read err = %d", ret_code);
         return false;
+    }
+    if (trans_status)
+    {
+        app_fifo_write(&m_temp_data_fifo, p_data_read, 2);
+    }
+    else
+    {
+        app_fifo_flush(&m_temp_data_fifo);
     }
     //    NRF_LOG_INFO("temp hex data = %d", ((p_data_read[0] << 8) + p_data_read[1]));
     return 0;

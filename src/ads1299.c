@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 02:25:12
+ * @LastEditTime: 2022-08-08 04:05:27
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\ads1299.c
  * @Description:
  *
@@ -19,6 +19,7 @@
 #include <string.h>
 #include "app_scheduler.h"
 #include "app_fifo.h"
+#include "customer_ble.h"
 
 #define NRFX_SPIM_SCK_PIN 28
 #define NRFX_SPIM_DIN_PIN 29
@@ -49,7 +50,6 @@ void spim_event_handler(nrfx_spim_evt_t const *p_event,
 {
     spi_xfer_done = true;
     NRF_LOG_INFO(" Received = %d", p_event->xfer_desc.rx_length);
-    
 }
 
 static int ads_reg_xfer(uint8_t command, uint8_t value)
@@ -105,6 +105,7 @@ static void spi_init(void)
 
 static void scheduler_adc_read_temp(void *p_event_data, uint16_t event_size)
 {
+    uint32_t lenght = 27;
     spi_xfer_done = false;
     memset(m_rx_buf, 0, 30);
     nrfx_spim_xfer_desc_t xfer_desc = NRFX_SPIM_XFER_RX(m_rx_buf, 27);
@@ -113,13 +114,23 @@ static void scheduler_adc_read_temp(void *p_event_data, uint16_t event_size)
     {
     }
     spi_xfer_done = false;
+    if (trans_status)
+    {
+        app_fifo_write(&m_adc_data_fifo, m_rx_buf, &lenght);
+        ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_adc_read_temp);
+        APP_ERROR_CHECK(err_code);
+    }
+    else
+    {
+        app_fifo_flush(&m_adc_data_fifo);
+    }
 }
 
 static void rdy_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-//    NRF_LOG_INFO("Test");
-//    ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_adc_read_temp);
-//    APP_ERROR_CHECK(err_code);
+    //    NRF_LOG_INFO("Test");
+    //    ret_code_t err_code = app_sched_event_put(NULL, 0, scheduler_adc_read_temp);
+    //    APP_ERROR_CHECK(err_code);
 }
 static void gpio_init(void)
 {

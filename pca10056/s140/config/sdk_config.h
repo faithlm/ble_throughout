@@ -6342,7 +6342,7 @@
 // <q> CRC16_ENABLED  - crc16 - CRC16 calculation routines
 
 #ifndef CRC16_ENABLED
-#define CRC16_ENABLED 0
+#define CRC16_ENABLED 1
 #endif
 
 // <q> CRC32_ENABLED  - crc32 - CRC32 calculation routines

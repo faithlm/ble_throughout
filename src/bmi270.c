@@ -2,7 +2,7 @@
  * @Author: Liangmeng
  * @Date: 2022-07-30 14:28:18
  * @LastEditors: Liangmeng
- * @LastEditTime: 2022-08-08 02:24:59
+ * @LastEditTime: 2022-08-08 04:00:27
  * @FilePath: \nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_throughout\src\bmi270.c
  * @Description:
  *
@@ -13,6 +13,7 @@
 #include "nrf_delay.h"
 #include "bmi270_config_file.h"
 #include "app_fifo.h"
+#include "customer_ble.h"
 
 #define BMI270_ADDR (0x68)
 #define BMI270_WR_LEN (256)
@@ -297,6 +298,14 @@ bool bmi270_read(void)
     {
         NRF_LOG_INFO("bmi270 read data fail");
         return false;
+    }
+    if (trans_status)
+    {
+        app_fifo_write(&m_imu_data_fifo, p_data, 12);
+    }
+    else
+    {
+        app_fifo_flush(&m_imu_data_fifo);
     }
     //    NRF_LOG_HEXDUMP_INFO(p_data, 12);
     return 0;
