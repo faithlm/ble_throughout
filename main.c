@@ -14,14 +14,14 @@
 #include "user_log.h"
 #include "customer_ble.h"
 #include "max30205.h"
-#include "bmi270.h"
+#include "m_bmi270.h"
 #include "app_scheduler.h"
 #include "ads1299.h"
 #include "customer_ble.h"
 #define APP_SCHED_MAX_EVENT_SIZE (20) /**< Maximum size of scheduler events. */
 #define APP_SCHED_QUEUE_SIZE (50)     /**< Maximum number of events in the scheduler queue. */
 
-#define TEMP_MEAS_INTERVAL APP_TIMER_TICKS(100)
+#define TEMP_MEAS_INTERVAL APP_TIMER_TICKS(1000)
 APP_TIMER_DEF(m_temp_timer_id);
 /**@brief Function for initializing power management.
  */
@@ -72,16 +72,16 @@ static void temp_meas_timeout_handler(void *p_context)
     ret_code_t err_code;
     static int32_t m_100ms_cnt = 0;
     m_100ms_cnt++;
-    NRF_LOG_INFO("Cnt = %d", get_cnt());
+
     err_code = app_sched_event_put(NULL, 0, scheduler_read_imu);
     APP_ERROR_CHECK(err_code);
 
-    if (0 == m_100ms_cnt % 10)
-    {
-        m_100ms_cnt = 0;
-        err_code = app_sched_event_put(NULL, 0, scheduler_read_temp);
-        APP_ERROR_CHECK(err_code);
-    }
+    // if (0 == m_100ms_cnt % 10)
+    // {
+    //     m_100ms_cnt = 0;
+    //     err_code = app_sched_event_put(NULL, 0, scheduler_read_temp);
+    //     APP_ERROR_CHECK(err_code);
+    // }
 }
 
 void timers_init(void)
@@ -109,19 +109,19 @@ int main(void)
     /* Initialize App Scheduler. */
     APP_SCHED_INIT(APP_SCHED_MAX_EVENT_SIZE, APP_SCHED_QUEUE_SIZE);
     power_management_init();
-    ble_init();
+//    ble_init();
 
-    if (!bmi270_init())
+    if (!m_bmi270_init())
     {
         NRF_LOG_ERROR("bmi270 init fail");
     }
 
-    if (!max_30205_init())
-    {
-        NRF_LOG_ERROR("max_30205_init fail");
-    }
-    ads_1299_init();
-    ads_1299_start();
+    // if (!max_30205_init())
+    // {
+    //     NRF_LOG_ERROR("max_30205_init fail");
+    // }
+    // ads_1299_init();
+    // ads_1299_start();
     // Enter main loop.
     for (;;)
     {

@@ -33,6 +33,7 @@ bool get_temp_fifo_data(uint8_t *p_data, uint32_t length)
 bool temp_fifo_flush(void)
 {
     app_fifo_flush(&m_temp_data_fifo);
+	return true;
 }
 
 static void temp_data_fifo_init(void)

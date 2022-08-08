@@ -26,16 +26,25 @@
 static const nrf_drv_twi_t m_iic_master = NRF_DRV_TWI_INSTANCE(MASTER_IIC_INST);
 static bool iic_init_status = false;
 
-ret_code_t iic_write(uint8_t addr, uint8_t const * pdata, uint8_t size)
+ret_code_t iic_write(uint8_t addr, uint8_t reg,const uint8_t  * pdata, uint8_t size)
 {
     ret_code_t ret;
-    ret = nrf_drv_twi_tx(&m_iic_master, addr, pdata, size, true);
+	uint8_t data[512] = {0};
+	data[0] = reg;
+		memcpy(&data[1],pdata,size);
+    ret = nrf_drv_twi_tx(&m_iic_master, addr, &reg, size+1, true);
     return ret;
 }
 
-ret_code_t iic_read(uint8_t addr, uint8_t * pdata, uint8_t size)
+ret_code_t iic_read(uint8_t addr, uint8_t reg,uint8_t * pdata, uint8_t size)
 {
     ret_code_t ret;
+		ret = nrf_drv_twi_tx(&m_iic_master, addr, &reg, 1, true);
+		if (NRF_SUCCESS != ret)
+     {
+         NRF_LOG_INFO("nrf_drv_twi_tx fail");
+         return false;
+     }
     ret = nrf_drv_twi_rx(&m_iic_master, addr, pdata, size);
     return ret;
 }

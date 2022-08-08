@@ -136,7 +136,7 @@ void scheduler_data_send(void *p_event_data, uint16_t event_size)
     data_send[5] = (data_send_index) & (0xFF);
     data_send[6] = adc_freq;
     get_temp_fifo_data(&data_send[7], TEMP_DATA_LENGTH_IN_BYTE);
-    get_imu_fifo_data(&data_send[9], IMU_DATA_LENGTH_IN_BYTE);
+//    get_imu_fifo_data(&data_send[9], IMU_DATA_LENGTH_IN_BYTE);
     get_adc_fifo_data(&data_send[21], ADC_DATA_LENGTH_IN_BYTE);
     nrf_data_send(data_send, 45);
 }
@@ -152,7 +152,7 @@ static void scheduler_ble_command_process(void *p_event_data, uint16_t event_siz
         {
             adc_fifo_flush();
             temp_fifo_flush();
-            imu_fifo_flush();
+//            imu_fifo_flush();
             trans_status = true;
         }
         else if (BLE_TRANS_STOP == cmd[1])
